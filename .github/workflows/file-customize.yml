@@ -1,0 +1,103 @@
+name: '自定义shell构建并下载'
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      SETTING_SEHLL_URL:
+        description: '设置构建环境的shell地址'
+        required: false
+      BUILD_BEFORE_SHELL_URL:
+        description: '构建前shell地址'
+        required: false
+      BUILD_SHELL_URL:
+        description: '构建shell命令地址'
+        required: true
+      BUILD_AFTER_SHELL_URL:
+        description: '构建后shell命令地址'
+        required: false
+      BUILD_TARGET_PATH:
+        description: '构建产物路径'
+        required: true
+        default: './dist/*'
+      UPLOAD_RELEASE:
+        description: '是否上传到RELEASE页面'
+        required: false
+        default: 'false'
+        type: boolean
+      UPLOAD_TRANSFER:
+        description: '上传服务,如wet,见github.com/Mikubill/transfer#support'
+        required: false
+      UPLOAD_TAG:
+        description: '上传文件用的TAG,默认使用构建时间'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v3
+      # 产生tag
+      - name: Generate tag
+        id: tag
+        run: |
+          tag=build-customize_$(date +'%m-%d_%H-%M-%S')
+          [ ! "${{github.event.inputs.UPLOAD_TAG}}" = "" ] && tag=${{github.event.inputs.UPLOAD_TAG}}
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      # 开始构建
+      - name: Build
+        id: build
+        run: |
+          rm -rf /tmp/dist
+          mkdir -p /tmp/dist
+          echo -e "github actions build\nstart time: $(date +'%Y-%m-%d %H:%M:%S')\n" > release.txt
+          start=$(date +%s)
+          if [[ "${{ github.event.inputs.SETTING_SEHLL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/setting.log; fi
+          if [[ "${{ github.event.inputs.BUILD_BEFORE_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/before.log; fi
+          wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/build.log
+          if [[ "${{ github.event.inputs.BUILD_AFTER_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/after.log; fi
+          end=$(date +%s)
+          take=$(( end - start ))
+          echo "end time: $(date +'%Y-%m-%d %H:%M:%S')" >> release.txt
+          echo "build use ${take}s" >> release.txt
+          cp -r ${{ github.event.inputs.BUILD_TARGET_PATH }} /tmp/dist
+          tar -zcvf /tmp/dist.tar.gz -C /tmp/dist $(ls /tmp/dist) > /dev/null
+
+      # 上传构建日志
+      - name: Upload build logs
+        uses: actions/upload-artifact@main
+        with:
+          name: log_${{ steps.tag.outputs.tag }}
+          path: /tmp/build_log
+          retention-days: 1
+
+      # 上传构建产物
+      - name: Upload firmware directory
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ steps.tag.outputs.tag }}
+          path: /tmp/dist.tar.gz
+          retention-days: 1
+
+      # 上传到中转服务
+      - name: Upload firmware to transfer
+        if: github.event.inputs.UPLOAD_TRANSFER && !failure() && !cancelled()
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer ${{ github.event.inputs.UPLOAD_TRANSFER }} --no-progress /tmp/dist.tar.gz 2>&1 | tee transfer.log
+          url=$(cat transfer.log | grep https | cut -f3 -d" ")
+          echo "🔗 External Download Link: $url" >> release.txt
+          echo "::warning ::External Download Link: $url"
+
+      # 生成release
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v1
+        if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          body_path: release.txt
+          files: /tmp/dist.tar.gz

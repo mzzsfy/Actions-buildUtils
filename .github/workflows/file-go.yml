@@ -1,0 +1,173 @@
+name: 'go构建并下载'
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      repoPath:
+        description: 'git仓库路径'
+        required: true
+      shellUrl:
+        description: '构建前运行脚本url'
+        required: false
+      shell:
+        description: '构建前运行shell命令:cd,go mod等'
+        required: false
+      GO_VERSION:
+        description: 'go版本'
+        required: false
+        default: '1.19'
+      UPLOAD_RELEASE:
+        description: '是否上传到RELEASE页面'
+        required: false
+        type: boolean
+        default: 'false'
+      UPLOAD_TRANSFER:
+        description: '上传服务,如wet,见github.com/Mikubill/transfer#support'
+        required: false
+      UPLOAD_TAG:
+        description: '上传文件用的TAG,默认使用构建时间'
+        required: false
+      platforms:
+        description: '需要构建的平台'
+        required: true
+        default: linux/amd64,linux/arm64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v3
+      # 产生tag
+      - name: Generate tag
+        id: tag
+        run: |
+          tag=build-go_$(date +'%m-%d_%H-%M-%S')
+          [ ! "${{github.event.inputs.UPLOAD_TAG}}" = "" ] && tag=${{github.event.inputs.UPLOAD_TAG}}
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      # 设置go环境
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ github.event.inputs.GO_VERSION }}
+
+      # 克隆目标,并且准备上下文
+      - name: Git clone
+        run: |
+         rm -rf {*,.[^.]*,..?*}
+         git clone "${{github.event.inputs.repoPath}}" .
+         if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
+
+#       # 开始构建
+#       - name: Run GoReleaser
+#         uses: goreleaser/goreleaser-action@v2
+#         with:
+#           args: build --skip-validate --rm-dist --timeout 90m
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 开始构建
+      - name: Build
+        id: build
+        run: |
+          rm -rf /tmp/dist
+          mkdir -p /tmp/dist
+          mkdir -p /tmp/build_log
+          echo -e "github actions build\nstart time: $(date +'%Y-%m-%d %H:%M:%S')\n" > release.txt
+          start=$(date +%s)
+          platforms=${{ github.event.inputs.platforms }}
+          echo "start build at $start, all platforms: $platforms"
+          platforms1=(${platforms//,/ })
+          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
+          for platforms2 in ${platforms1[*]}; do
+            p=(${platforms2//\// })
+            V_OS="${p[0]}"
+            V_ARCH="${p[1]}"
+            echo "strart build $platforms2 -> ${V_OS}_${V_ARCH}"
+            echo "/tmp/dist/${V_OS}_${V_ARCH}" >> /tmp/files
+            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}" -ldflags="-w -s" > "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
+            && echo "build over $platforms2 -> ${V_OS}_${V_ARCH} use $(( $(date +%s) - start ))s" \
+            && echo "${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" >> release.txt \
+            && echo "::notice ::$platforms2 -> ${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" \
+            || (echo "::error ::build fail $platforms2 -> ${V_OS}_${V_ARCH} use $(( $(date +%s) - start ))s" && cat /tmp/build_log/${V_OS}_${V_ARCH}.log) &
+          done
+          wait
+          end=$(date +%s)
+          take=$(( end - start ))
+          echo "end time: $(date +'%Y-%m-%d %H:%M:%S')" >> release.txt
+          echo -e "all build use ${take}s\n" >> release.txt
+          tar -zcvf dist.tar.gz -C /tmp/dist $(ls /tmp/dist) > /dev/null
+
+      # 上传构建日志
+      - name: Upload build logs
+        uses: actions/upload-artifact@main
+        with:
+          name: log_${{ steps.tag.outputs.tag }}
+          path: /tmp/build_log
+          retention-days: 1
+
+      # 上传构建产物
+      - name: Upload firmware directory
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ steps.tag.outputs.tag }}
+          path: dist.tar.gz
+          retention-days: 1
+          
+
+#       # 上传构建产物
+#       - name: Upload firmware directory
+#         uses: actions/github-script@v2
+#         with:
+#           github-token: ${{secrets.GITHUB_TOKEN}}
+#           script: |
+#             console.log('environment', process.versions);
+
+#             const fs = require('fs').promises;
+
+#             const { repo: { owner, repo }, sha } = context;
+#             console.log({ owner, repo, sha });
+
+#             const release = await github.repos.createRelease({
+#               owner, repo,
+#               tag_name: process.env.GITHUB_REF,
+#               draft: true,
+#               target_commitish: sha
+#             });
+
+#             console.log('created release', { release });
+
+#             for (let file of await fs.readdir('.')) {
+#               // do whatever filtering you want here, I'm just uploading all the files
+#               console.log('uploading', file);
+
+#               await github.repos.uploadReleaseAsset({
+#                 owner, repo,
+#                 release_id: release.data.id,
+#                 name: file,
+#                 data: await fs.readFile(`./${file}`)
+#               });            
+#             }
+
+      # 上传到中转服务
+      - name: Upload firmware to transfer
+        if: github.event.inputs.UPLOAD_TRANSFER && !failure() && !cancelled()
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer ${{ github.event.inputs.UPLOAD_TRANSFER }} --no-progress dist.tar.gz 2>&1 | tee transfer.log
+          url=$(cat transfer.log | grep https | cut -f3 -d" ")
+          echo "🔗 External Download Link: $url" >> release.txt
+          echo "::warning ::External Download Link: $url"
+
+      # 生成release
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v1
+        if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          body_path: release.txt
+          files: /tmp/dist/*

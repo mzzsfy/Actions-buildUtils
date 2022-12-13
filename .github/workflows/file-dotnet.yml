@@ -1,0 +1,133 @@
+name: 'c#构建并下载'
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      repoPath:
+        description: 'git仓库路径'
+        required: true
+      shellUrl:
+        description: '构建前运行脚本url'
+        required: false
+      shell:
+        description: '构建前运行shell命令,cd或者restore等'
+        required: false
+      DOTNET_VERSION:
+        description: '.net版本'
+        required: false
+        default: '6.x'
+      UPLOAD_RELEASE:
+        description: '是否上传到RELEASE页面'
+        required: false
+        default: 'false'
+        type: boolean
+      UPLOAD_TRANSFER:
+        description: '上传服务,如wet,见github.com/Mikubill/transfer#support'
+        required: false
+      UPLOAD_TAG:
+        description: '上传文件用的TAG,默认使用构建时间'
+        required: false
+      platforms:
+        description: '需要构建的架构'
+        required: true
+        default: win-x64,linux-x64,linux-arm64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v3
+      # 产生tag
+      - name: Generate tag
+        id: tag
+        run: |
+          tag=build-dotnet_$(date +'%m-%d_%H-%M-%S')
+          [ ! "${{github.event.inputs.UPLOAD_TAG}}" = "" ] && tag=${{github.event.inputs.UPLOAD_TAG}}
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      # 设置构建环境依赖
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ github.event.inputs.DOTNET_VERSION }}
+
+      # 克隆目标,并且准备上下文
+      - name: Git clone
+        run: |
+         rm -rf {*,.[^.]*,..?*}
+         git clone "${{github.event.inputs.repoPath}}" .
+         if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
+
+      # 开始构建
+      - name: Build
+        id: build
+        run: |
+          rm -rf /tmp/dist
+          mkdir -p /tmp/dist
+          mkdir -p /tmp/dist_tmp
+          mkdir -p /tmp/build_log
+          dotnet restore
+          echo -e "github actions build\nstart time: $(date +'%Y-%m-%d %H:%M:%S')\n" > release.txt
+          start=$(date +%s)
+          platforms=${{ github.event.inputs.platforms }}
+          echo "start build at $start, all platforms: $platforms"
+          platforms1=(${platforms//,/ })
+          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
+          for platforms2 in ${platforms1[*]}; do
+            start1=$(date +%s)
+            echo "strart build $platforms2"
+            echo "/tmp/dist/${platforms2}" >> /tmp/files
+            # mkdir -p /tmp/src/${platforms2} &&cp -r ./* /tmp/src/${platforms2}/&& cd /tmp/src/${platforms2} &&\
+            dotnet publish -c Release -p:PublishSingleFile=true -p:PublishTrimmed=true -o "/tmp/dist_tmp/${platforms2}" > "/tmp/build_log/${platforms2}.log" 2>&1  \
+            && echo "build over $platforms2 use $(( $(date +%s) - start ))s" \
+            && echo "${platforms2} build use $(( $(date +%s) - start ))s" >> release.txt \
+            && echo "::notice ::$platforms2 build use $(( $(date +%s) - start1 ))s" \
+            && tar -zcvf /tmp/dist/${platforms2}.tar.gz -C /tmp/dist_tmp/${platforms2}/ $(ls /tmp/dist_tmp/${platforms2}) > /dev/null \
+            || (echo "::error ::build fail $platforms2 use $(( $(date +%s) - start ))s" && cat /tmp/build_log/${platforms2}.log)
+          done
+          wait
+          end=$(date +%s)
+          take=$(( end - start ))
+          echo "end time: $(date +'%Y-%m-%d %H:%M:%S')" >> release.txt
+          echo -e "all build use ${take}s\n" >> release.txt
+          echo "::notice ::all build use $(( $(date +%s) - start ))s"
+          tar -zcvf dist.tar.gz -C /tmp/dist/ $(ls /tmp/dist) > /dev/null
+
+      # 上传构建日志
+      - name: Upload build logs
+        uses: actions/upload-artifact@main
+        with:
+          name: log_${{ steps.tag.outputs.tag }}
+          path: /tmp/build_log
+          retention-days: 1
+
+      # 上传构建产物
+      - name: Upload firmware directory
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ steps.tag.outputs.tag }}
+          path: dist.tar.gz
+          retention-days: 1
+
+      # 上传到中转服务
+      - name: Upload firmware to transfer
+        if: github.event.inputs.UPLOAD_TRANSFER && !failure() && !cancelled()
+        run: |
+          curl -fsSL git.io/file-transfer | sh
+          ./transfer ${{ github.event.inputs.UPLOAD_TRANSFER }} --no-progress dist.tar.gz 2>&1 | tee transfer.log
+          url=$(cat transfer.log | grep https | cut -f3 -d" ")
+          echo "🔗 External Download Link: $url" >> release.txt
+          echo "::warning ::External Download Link: $url"
+
+      # 生成release
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v1
+        if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          body_path: release.txt
+          files: /tmp/dist/*
