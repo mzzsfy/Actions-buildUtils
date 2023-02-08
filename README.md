@@ -1,5 +1,6 @@
 # Actions-buildUtils
-一些通用的白嫖git Actions的构建工具
+
+一些通用的白嫖git Actions的构建工具  
 
 ## 使用教程
 
@@ -20,9 +21,9 @@ fork本仓库
 ![image](https://user-images.githubusercontent.com/43053461/204227942-2f79ba80-f000-41cd-9b3a-a5b0f543e390.png)
 ![image](https://user-images.githubusercontent.com/43053461/204228180-34b77c57-05f8-4707-bf7e-02d75b6b315e.png)
 
-快乐白嫖
+快乐白嫖,记得给我点个star https://github.com/mzzsfy/Actions-buildUtils
 
-### 私有库
+### 私有库用法
 
 github: 
 首先创建token
