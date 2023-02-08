@@ -1,7 +1,6 @@
 # Actions-buildUtils
 [![](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fmzzsfy%2FActions-buildUtils&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://github.com/mzzsfy)
 [![](https://changkun.de/urlstat?mode=github&repo=mzzsfy/Actions-buildUtils)](https://github.com/mzzsfy)
-[![](https://changkun.de/urlstat?mode=github&repo=mzzsfy/Actions-buildUtils&urlstat-page-uv&title=uv)](https://github.com/mzzsfy)
 
 一些通用的白嫖git Actions的构建工具  
 
