@@ -4,8 +4,14 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      SETTING_SEHLL_URL:
+      SETTING_SHELL_URL:
         description: '设置构建环境的shell地址'
+        required: false
+      GIT_REPO_URL:
+        description: 'git仓库地址'
+        required: false
+      GIT_REPO_BRANCH:
+        description: 'git仓库分支'
         required: false
       BUILD_BEFORE_SHELL_URL:
         description: '构建前shell地址'
@@ -54,10 +60,11 @@ jobs:
           mkdir -p /tmp/dist
           echo -e "github actions build\nstart time: $(date +'%Y-%m-%d %H:%M:%S')\n" > release.txt
           start=$(date +%s)
-          if [[ "${{ github.event.inputs.SETTING_SEHLL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/setting.log; fi
-          if [[ "${{ github.event.inputs.BUILD_BEFORE_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/before.log; fi
-          wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/build.log
-          if [[ "${{ github.event.inputs.BUILD_AFTER_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SEHLL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/after.log; fi
+          if [[ "${{ github.event.inputs.SETTING_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SHELL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/setting.log; fi
+          if [[ "${{ github.event.inputs.GIT_REPO_URL }}" ]] && if [[ "${{ github.event.inputs.GIT_REPO_BRANCH }}" ]] ;then git clone --depth 1 -b "${{ github.event.inputs.GIT_REPO_BRANCH }}" "${{github.event.inputs.GIT_REPO_URL}}" . ; else git clone --depth 1 "${{github.event.inputs.GIT_REPO_URL}}" . ; fi
+          if [[ "${{ github.event.inputs.BUILD_BEFORE_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SHELL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/before.log; fi
+          wget "${{github.event.inputs.SETTING_SHELL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/build.log
+          if [[ "${{ github.event.inputs.BUILD_AFTER_SHELL_URL }}" ]] ;then wget "${{github.event.inputs.SETTING_SHELL_URL}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh | tee /tmp/build_log/after.log; fi
           end=$(date +%s)
           take=$(( end - start ))
           echo "end time: $(date +'%Y-%m-%d %H:%M:%S')" >> release.txt
