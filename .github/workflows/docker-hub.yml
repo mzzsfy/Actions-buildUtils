@@ -10,6 +10,9 @@ on:
       repoPath:
         description: 'git仓库路径'
         required: true
+      repoBranch :
+        description: '指定分支'
+        required: false
       dockerFileUrl:
         description: '自定义DockerFile下载路径,可空'
         required: false
@@ -52,7 +55,7 @@ jobs:
         id: redy
         run: |
          rm -rf {*,.[^.]*,..?*}
-         git clone "${{github.event.inputs.repoPath}}" .
+         if [[ "${{ github.event.inputs.repoBranch }}" ]] ;then git clone --depth 1 -b "${{ github.event.inputs.repoBranch }}" "${{github.event.inputs.repoPath}}" . ; else git clone --depth 1 "${{github.event.inputs.repoPath}}" . ; fi
          if [[ "${{ github.event.inputs.dockerFileUrl }}" ]] ;then wget "${{github.event.inputs.dockerFileUrl}}" -O ./Dockerfile ; fi
          if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
