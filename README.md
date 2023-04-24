@@ -6,7 +6,8 @@
 ## 使用教程
 
 ### 填写参数
-fork本仓库
+
+fork本仓库 ( **⚠️ 如果你需要长期或者大量的使用Actions,请使用非fork方法,见后文,因为 GitHub 会根据此上游存储库计算您的 fork GitHub Actions 使用情况，这可能会导致此上游存储库被 GitHub 员工（如 MagiskOnWSA）禁用** )
 
 按如下操作添加参数
 ![image](https://user-images.githubusercontent.com/43053461/204208295-4004ee4a-30dc-4e7f-9587-5c8f9edb52cd.png)
@@ -35,3 +36,16 @@ git地址写法`https://oauth2:<token>@github.com/name/repo`
 其它git服务
 
 git地址写法`https://<username>:<password>@<url>`
+
+## 非fork同步本仓库
+
+因为 GitHub 会根据此上游存储库计算您的 fork GitHub Actions 使用情况，这可能会导致此上游存储库被 GitHub 员工（如 MagiskOnWSA）禁用  
+所以你如果你需要长期或者大量的使用Actions,请不要使用fork
+
+使用导入
+![image](https://user-images.githubusercontent.com/43053461/233926542-62677cc0-036c-4c64-8f16-47c26db3ea9f.png)
+填入本仓库地址
+![image](https://user-images.githubusercontent.com/43053461/233927154-d7f7e941-a569-4836-8946-6f1c13cc0cc3.png)
+开启Actions
+![image](https://user-images.githubusercontent.com/43053461/233927826-aaa1ff17-df06-4989-bec9-f59df6b80dac.png)
+
