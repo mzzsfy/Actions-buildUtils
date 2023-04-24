@@ -42,6 +42,11 @@ git地址写法`https://<username>:<password>@<url>`
 因为 GitHub 会根据此上游存储库计算您的 fork GitHub Actions 使用情况，这可能会导致此上游存储库被 GitHub 员工（如 [MagiskOnWSA](https://github.com/LSPosed/MagiskOnWSA)）禁用  
 所以你如果你需要长期或者大量的使用Actions,请不要使用fork,以下提供几种参考方法
 
+### 使用 git 命令
+
+参考官方文档 大致逻辑是git clone 本仓库, 推送为新仓库,使用本地仓库做中转,实现文件的同步,后面面几种方法是不支持同步更改的
+https://docs.github.com/en/repositories/creating-and-managing-repositories/duplicating-a-repository
+
 ### 使用导入  
 ![image](https://user-images.githubusercontent.com/43053461/233926542-62677cc0-036c-4c64-8f16-47c26db3ea9f.png)  
 填入本仓库地址  
@@ -49,12 +54,8 @@ git地址写法`https://<username>:<password>@<url>`
 开启Actions  
 ![image](https://user-images.githubusercontent.com/43053461/233927826-aaa1ff17-df06-4989-bec9-f59df6b80dac.png)  
 
-### git 命令
-
-https://docs.github.com/en/repositories/creating-and-managing-repositories/duplicating-a-repository
-
 ### 使用模板生成
 
 ![image](https://user-images.githubusercontent.com/43053461/233928835-81551763-7137-4a86-9d06-262e664c936c.png)
 
-模板生成不确定是否能规避该风险,建议优先使用上面的方法
+模板生成不确定是否能规避该风险,建议优先使用前面的方法
