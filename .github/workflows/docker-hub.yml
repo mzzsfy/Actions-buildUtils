@@ -82,7 +82,7 @@ jobs:
       - name: Docker before
         id: docker_before
         run: |
-          image="${{ secrets.DOCKER_HUB_USERNAME }}/${{ github.event.inputs.imageName }}"
+          image="${{ steps.redy.outputs.dockerHubUsername }}/${{ github.event.inputs.imageName }}"
           echo "original image $image"
           arr=(${image//\// })
           image=""
