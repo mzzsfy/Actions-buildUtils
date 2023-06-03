@@ -31,11 +31,11 @@ on:
         type: secrets
         required: false
       tmpUsername:
-        description: '用户名,覆盖环境变量,可空'
+        description: 'docker-hub 用户名,覆盖环境变量,可空'
         required: false
         type: secrets
       tmpToken:
-        description: 'token,覆盖环境变量,可空,可密码'
+        description: 'docker-hub token,覆盖环境变量,可空,可密码'
         required: false
         type: secrets
 jobs:
@@ -59,19 +59,19 @@ jobs:
          if [[ "${{ github.event.inputs.dockerFileUrl }}" ]] ;then wget "${{github.event.inputs.dockerFileUrl}}" -O ./Dockerfile ; fi
          if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
-         githubUsername=${{ secrets.DOCKER_HUB_USERNAME }}
-         githubPassword=${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-         if [[ "${{ github.event.inputs.tmpUsername }}" ]] ;then githubUsername="${{github.event.inputs.tmpUsername}}" ; fi
+         dockerHubUsername=${{ secrets.DOCKER_HUB_USERNAME }}
+         dockerHubPassword=${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+         if [[ "${{ github.event.inputs.tmpUsername }}" ]] ;then dockerHubUsername="${{github.event.inputs.tmpUsername}}" ; fi
          if [[ "${{ github.event.inputs.tmpToken }}" ]] ;then githubPassword="${{github.event.inputs.tmpToken}}" ; fi
-         echo "githubUsername=$githubUsername" >> $GITHUB_OUTPUT
-         echo "githubPassword=$githubPassword" >> $GITHUB_OUTPUT
+         echo "dockerHubUsername=$dockerHubUsername" >> $GITHUB_OUTPUT
+         echo "dockerHubPassword=$dockerHubPassword" >> $GITHUB_OUTPUT
 
       # docker login
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ steps.redy.outputs.githubUsername }}
-          password: ${{ steps.redy.outputs.githubPassword }}
+          username: ${{ steps.redy.outputs.dockerHubUsername }}
+          password: ${{ steps.redy.outputs.dockerHubPassword }}
 
       # 设置 docker buildx 环境
       - name: Set up Docker Buildx
