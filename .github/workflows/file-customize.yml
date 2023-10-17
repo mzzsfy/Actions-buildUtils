@@ -29,7 +29,7 @@ on:
       UPLOAD_RELEASE:
         description: '是否上传到RELEASE页面'
         required: false
-        default: 'false'
+        default: false
         type: boolean
       UPLOAD_TRANSFER:
         description: '上传服务,如wet,见github.com/Mikubill/transfer#support'

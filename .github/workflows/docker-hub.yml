@@ -27,17 +27,29 @@ on:
         required: false
         default: linux/amd64,linux/arm64/v8
       tags:
-        description: '自定义dockerTags,逗号分隔,默认为时间'
-        type: secrets
+        description: '自定义dockerTags,逗号分隔,默认为latest'
+        required: false
+      timeTags:
+        description: '添加时间自动生成的dockerTag'
+        type: boolean
+        default: true
+      timeTagsFormat:
+        description: '根据时间自动生成的dockerTag格式'
+        type: choice
+        default: 月-日_时-分-秒
+        options:
+          - 年-月-日_时-分-秒
+          - 年-月-日_时-分
+          - 月-日_时-分-秒
+      timeTagsPrefix:
+        description: '根据时间生成Tag的前缀'
         required: false
       tmpUsername:
         description: 'docker-hub 用户名,覆盖环境变量,可空'
         required: false
-        type: secrets
       tmpToken:
         description: 'docker-hub token,覆盖环境变量,可空,可密码'
         required: false
-        type: secrets
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -91,13 +103,22 @@ jobs:
           var_end=$(($var_len - 1))
           for ((i=$var_start; i<=$var_end ; i ++)); do image="${image}/${arr[$i]}"; done
           image=${image:1}
-          tags="$image:latest,$image:$(date +'%m-%d_%H-%M-%S')"
-          echo "original tags $tags"
+          tags="$image:latest"
           t="${{github.event.inputs.tags}}"
           if [[ "$t" ]] ; then
+            tags=""
             echo "customize tags $t"
             arr=(${t//,/ })
-            for i in ${arr[*]}; do image="${image}/$i"; done
+            for i in ${arr[*]}; do tags="$tags,${image}:$i"; done
+          fi
+          if [[ "${{github.event.inputs.timeTags}}" == "true" ]] ; then
+            timeFormat="+'%m-%d_%H-%M-%S'"
+            if [[ "${{github.event.inputs.timeTagsFormat}}" == "年-月-日_时-分-秒" ]] ; then
+                timeFormat="+'%y-%m-%d_%H-%M-%S'"
+            elif [[ "${{github.event.inputs.timeTagsFormat}}" == "年-月-日_时-分" ]] ; then
+                timeFormat="+'%y-%m-%d_%H-%M'"
+            fi
+            tags="$tags,$image:${{github.event.inputs.timeTagsPrefix}}$(date $timeFormat)"
           fi
           echo "target images $tags"
           echo "tags=$tags" >> $GITHUB_OUTPUT

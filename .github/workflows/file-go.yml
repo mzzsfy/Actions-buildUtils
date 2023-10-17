@@ -17,14 +17,14 @@ on:
         description: '构建前运行shell命令:cd,go mod等'
         required: false
       GO_VERSION:
-        description: 'go版本'
-        required: false
-        default: '1.19'
+        description: 'go版本,默认最新go稳定版'
+        required: true
+        default: 'stable'
       UPLOAD_RELEASE:
         description: '是否上传到RELEASE页面'
         required: false
         type: boolean
-        default: 'false'
+        default: false
       UPLOAD_TRANSFER:
         description: '上传服务,如wet,见github.com/Mikubill/transfer#support'
         required: false
