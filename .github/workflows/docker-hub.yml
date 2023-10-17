@@ -29,27 +29,19 @@ on:
       tags:
         description: '自定义dockerTags,逗号分隔,默认为latest'
         required: false
-      timeTags:
-        description: '添加时间自动生成的dockerTag'
-        type: boolean
-        default: true
       timeTagsFormat:
-        description: '根据时间自动生成的dockerTag格式'
+        description: '根据时间自动生成的dockerTag'
         type: choice
         default: 月-日_时-分-秒
         options:
+          - 不生成时间tag
           - 年-月-日_时-分-秒
           - 年-月-日_时-分
           - 月-日_时-分-秒
       timeTagsPrefix:
         description: '根据时间生成Tag的前缀'
         required: false
-      tmpUsername:
-        description: 'docker-hub 用户名,覆盖环境变量,可空'
-        required: false
-      tmpToken:
-        description: 'docker-hub token,覆盖环境变量,可空,可密码'
-        required: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -73,8 +65,8 @@ jobs:
          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
          dockerHubUsername=${{ secrets.DOCKER_HUB_USERNAME }}
          dockerHubPassword=${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-         if [[ "${{ github.event.inputs.tmpUsername }}" ]] ;then dockerHubUsername="${{github.event.inputs.tmpUsername}}" ; fi
-         if [[ "${{ github.event.inputs.tmpToken }}" ]] ;then githubPassword="${{github.event.inputs.tmpToken}}" ; fi
+         if [[ "${{ env.tmpUsername }}" ]] ;then dockerHubUsername="${{env.tmpUsername}}" ; fi
+         if [[ "${{ env.tmpToken }}" ]] ;then githubPassword="${{env.tmpToken}}" ; fi
          echo "dockerHubUsername=$dockerHubUsername" >> $GITHUB_OUTPUT
          echo "dockerHubPassword=$dockerHubPassword" >> $GITHUB_OUTPUT
 
@@ -111,7 +103,7 @@ jobs:
             arr=(${t//,/ })
             for i in ${arr[*]}; do tags="$tags,${image}:$i"; done
           fi
-          if [[ "${{github.event.inputs.timeTags}}" == "true" ]] ; then
+          if [[ "${{github.event.inputs.timeTagsFormat}}" != "不生成时间tag" ]] ; then
             timeFormat="+'%m-%d_%H-%M-%S'"
             if [[ "${{github.event.inputs.timeTagsFormat}}" == "年-月-日_时-分-秒" ]] ; then
                 timeFormat="+'%y-%m-%d_%H-%M-%S'"
