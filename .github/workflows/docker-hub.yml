@@ -38,6 +38,7 @@ on:
           - 年-月-日_时-分-秒
           - 年-月-日_时-分
           - 月-日_时-分-秒
+          - 月-日_时-分
       timeTagsPrefix:
         description: '根据时间生成Tag的前缀'
         required: false
@@ -65,6 +66,8 @@ jobs:
          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
          dockerHubUsername=${{ secrets.DOCKER_HUB_USERNAME }}
          dockerHubPassword=${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+         if [[ "${{ env.DOCKER_HUB_USERNAME }}" ]] ;then dockerHubUsername="${{env.DOCKER_HUB_USERNAME}}" ; fi
+         if [[ "${{ env.DOCKER_HUB_ACCESS_TOKEN }}" ]] ;then githubPassword="${{env.DOCKER_HUB_ACCESS_TOKEN}}" ; fi
          if [[ "${{ env.tmpUsername }}" ]] ;then dockerHubUsername="${{env.tmpUsername}}" ; fi
          if [[ "${{ env.tmpToken }}" ]] ;then githubPassword="${{env.tmpToken}}" ; fi
          echo "dockerHubUsername=$dockerHubUsername" >> $GITHUB_OUTPUT
@@ -102,6 +105,7 @@ jobs:
             echo "customize tags $t"
             arr=(${t//,/ })
             for i in ${arr[*]}; do tags="$tags,${image}:$i"; done
+            tags=${tags:1}
           fi
           if [[ "${{github.event.inputs.timeTagsFormat}}" != "不生成时间tag" ]] ; then
             timeFormat="+%m-%d_%H-%M-%S"
@@ -109,6 +113,8 @@ jobs:
                 timeFormat="+%y-%m-%d_%H-%M-%S"
             elif [[ "${{github.event.inputs.timeTagsFormat}}" == "年-月-日_时-分" ]] ; then
                 timeFormat="+%y-%m-%d_%H-%M"
+            elif [[ "${{github.event.inputs.timeTagsFormat}}" == "月-日_时-分" ]] ; then
+                timeFormat="+%m-%d_%H-%M"
             fi
             tags="$tags,$image:${{github.event.inputs.timeTagsPrefix}}$(date $timeFormat)"
           fi
