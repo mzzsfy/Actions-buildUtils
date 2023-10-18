@@ -4,14 +4,14 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
+      repoUrl:
+        description: 'git仓库克隆url地址'
+        required: true
       imageName:
-        description: '构建镜像的名称'
-        required: true
-      repoPath:
-        description: 'git仓库路径'
-        required: true
+        description: '构建镜像的名称,默认为git仓库地址'
+        required: false
       repoBranch :
-        description: '指定分支'
+        description: '指定git分支'
         required: false
       dockerFileUrl:
         description: '自定义DockerFile下载路径,可空'
@@ -27,8 +27,9 @@ on:
         required: false
         default: linux/amd64,linux/arm64/v8
       tags:
-        description: '自定义dockerTags,逗号分隔,默认为latest'
+        description: '自定义dockerTags,多个使用逗号分隔'
         required: false
+        default: latest
       timeTagsFormat:
         description: '根据时间自动生成的dockerTag'
         type: choice
@@ -60,7 +61,7 @@ jobs:
         id: redy
         run: |
          rm -rf {*,.[^.]*,..?*}
-         if [[ "${{ github.event.inputs.repoBranch }}" ]] ;then git clone --depth 1 -b "${{ github.event.inputs.repoBranch }}" "${{github.event.inputs.repoPath}}" . ; else git clone --depth 1 "${{github.event.inputs.repoPath}}" . ; fi
+         if [[ "${{ github.event.inputs.repoBranch }}" ]] ;then git clone --depth 1 -b "${{ github.event.inputs.repoBranch }}" "${{github.event.inputs.repoUrl}}" . ; else git clone --depth 1 "${{github.event.inputs.repoUrl}}" . ; fi
          if [[ "${{ github.event.inputs.dockerFileUrl }}" ]] ;then wget "${{github.event.inputs.dockerFileUrl}}" -O ./Dockerfile ; fi
          if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
          if [[ "${{ github.event.inputs.shell }}" ]] ;then ""${{github.event.inputs.shell}} ; fi
@@ -70,8 +71,15 @@ jobs:
          if [[ "${{ env.DOCKER_HUB_ACCESS_TOKEN }}" ]] ;then githubPassword="${{env.DOCKER_HUB_ACCESS_TOKEN}}" ; fi
          if [[ "${{ env.tmpUsername }}" ]] ;then dockerHubUsername="${{env.tmpUsername}}" ; fi
          if [[ "${{ env.tmpToken }}" ]] ;then githubPassword="${{env.tmpToken}}" ; fi
+         imageName=${{github.event.inputs.imageName}}
+         if [[ "$imageName" ]] ; then
+         imageName=$(basename "${{github.event.inputs.repoUrl}}" | awk -F '?' '{print $1}')
+         imageName=$(echo "$imageName" | tr '[:upper:]' '[:lower:]')
+         echo "auto docker image name ${{github.event.inputs.repoUrl}} => $imageName"
+         fi
          echo "dockerHubUsername=$dockerHubUsername" >> $GITHUB_OUTPUT
          echo "dockerHubPassword=$dockerHubPassword" >> $GITHUB_OUTPUT
+         echo "imageName=$imageName" >> $GITHUB_OUTPUT
 
       # docker login
       - name: Login to Docker Hub
@@ -89,7 +97,7 @@ jobs:
       - name: Docker before
         id: docker_before
         run: |
-          image="${{ steps.redy.outputs.dockerHubUsername }}/${{ github.event.inputs.imageName }}"
+          image="${{ steps.redy.outputs.dockerHubUsername }}/${{ steps.redy.outputs.imageName }}"
           echo "original image $image"
           arr=(${image//\// })
           image=""
