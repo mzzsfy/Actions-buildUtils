@@ -8,7 +8,7 @@ on:
         description: 'git仓库克隆url地址'
         required: true
       imageName:
-        description: '构建镜像的名称,默认为git仓库地址'
+        description: '构建镜像的名称,不填写根据git地址自动生成'
         required: false
       repoBranch :
         description: '指定git分支'
