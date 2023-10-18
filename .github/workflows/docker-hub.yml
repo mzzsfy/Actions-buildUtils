@@ -72,7 +72,7 @@ jobs:
          if [[ "${{ env.tmpUsername }}" ]] ;then dockerHubUsername="${{env.tmpUsername}}" ; fi
          if [[ "${{ env.tmpToken }}" ]] ;then githubPassword="${{env.tmpToken}}" ; fi
          imageName=${{github.event.inputs.imageName}}
-         if [[ "$imageName" ]] ; then
+         if [[ ! "$imageName" ]] ; then
          imageName=$(basename "${{github.event.inputs.repoUrl}}" | awk -F '?' '{print $1}')
          imageName=$(echo "$imageName" | tr '[:upper:]' '[:lower:]')
          echo "auto docker image name ${{github.event.inputs.repoUrl}} => $imageName"
