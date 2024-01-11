@@ -20,8 +20,10 @@ fork本仓库 ( **⚠️ GitHub 会根据此上游存储库计算您的 fork Git
 
 按如下步骤点击
 
-![image](https://user-images.githubusercontent.com/43053461/204227942-2f79ba80-f000-41cd-9b3a-a5b0f543e390.png)
-![image](https://user-images.githubusercontent.com/43053461/204228180-34b77c57-05f8-4707-bf7e-02d75b6b315e.png)
+![image](https://github.com/mzzsfy/Actions-buildUtils/assets/43053461/72f501a2-744d-4178-b864-8ca897594af7)
+
+![image](https://github.com/mzzsfy/Actions-buildUtils/assets/43053461/4d38324c-5f28-4281-8fc0-875789ceabb3)
+
 
 快乐白嫖,记得给我点个star https://github.com/mzzsfy/Actions-buildUtils
 
