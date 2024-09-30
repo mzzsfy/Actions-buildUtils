@@ -27,7 +27,7 @@ on:
         required: false
         default: linux/amd64,linux/arm64/v8
       tags:
-        description: '自定义dockerTags,多个使用逗号分隔'
+        description: '自定义dockerTags,多个使用逗号分隔,非dockerhub使用完整tag(例ghcr.io/xxx/xxx)'
         required: false
         default: latest
       timeTagsFormat:
@@ -133,7 +133,7 @@ jobs:
       # build 并且 push docker 镜像
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
