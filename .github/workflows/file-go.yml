@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out
-        uses: actions/checkout@v3
+        uses: actions/checkout@latest
       # 产生tag
       - name: Generate tag
         id: tag
@@ -52,7 +52,7 @@ jobs:
 
       # 设置go环境
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@latest
         with:
           go-version: ${{ github.event.inputs.GO_VERSION }}
 
@@ -62,14 +62,6 @@ jobs:
          rm -rf {*,.[^.]*,..?*}
          if [[ "${{ github.event.inputs.repoBranch }}" ]] ;then git clone --depth 1 -b "${{ github.event.inputs.repoBranch }}" "${{github.event.inputs.repoPath}}" . ; else git clone --depth 1 "${{github.event.inputs.repoPath}}" . ; fi
          if [[ "${{ github.event.inputs.shellUrl }}" ]] ;then wget "${{github.event.inputs.shellUrl}}" -O /tmp/.customize_shell.sh ; chmod +x /tmp/.customize_shell.sh && /tmp/.customize_shell.sh; fi
-
-#       # 开始构建
-#       - name: Run GoReleaser
-#         uses: goreleaser/goreleaser-action@v2
-#         with:
-#           args: build --skip-validate --rm-dist --timeout 90m
-#         env:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 开始构建
       - name: Build
@@ -92,7 +84,7 @@ jobs:
             [ "${V_OS}" == 'windows' ] && V_SUFFIX='.exe'
             echo "strart build $platforms2 -> ${V_OS}_${V_ARCH}"
             echo "/tmp/dist/${V_OS}_${V_ARCH}" >> /tmp/files
-            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}${V_SUFFIX}" -ldflags="-w -s" > "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
+            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}${V_SUFFIX}" -ldflags="-w -s" -v | tee "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
             && echo "build over $platforms2 -> ${V_OS}_${V_ARCH} use $(( $(date +%s) - start ))s" \
             && echo "${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" >> release.txt \
             && echo "::notice ::$platforms2 -> ${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" \
@@ -107,7 +99,7 @@ jobs:
 
       # 上传构建日志
       - name: Upload build logs
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@latest
         with:
           name: log_${{ steps.tag.outputs.tag }}
           path: /tmp/build_log
@@ -115,46 +107,11 @@ jobs:
 
       # 上传构建产物
       - name: Upload firmware directory
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@latest
         with:
           name: ${{ steps.tag.outputs.tag }}
           path: dist.tar.gz
           retention-days: 1
-
-
-#       # 上传构建产物
-#       - name: Upload firmware directory
-#         uses: actions/github-script@v2
-#         with:
-#           github-token: ${{secrets.GITHUB_TOKEN}}
-#           script: |
-#             console.log('environment', process.versions);
-
-#             const fs = require('fs').promises;
-
-#             const { repo: { owner, repo }, sha } = context;
-#             console.log({ owner, repo, sha });
-
-#             const release = await github.repos.createRelease({
-#               owner, repo,
-#               tag_name: process.env.GITHUB_REF,
-#               draft: true,
-#               target_commitish: sha
-#             });
-
-#             console.log('created release', { release });
-
-#             for (let file of await fs.readdir('.')) {
-#               // do whatever filtering you want here, I'm just uploading all the files
-#               console.log('uploading', file);
-
-#               await github.repos.uploadReleaseAsset({
-#                 owner, repo,
-#                 release_id: release.data.id,
-#                 name: file,
-#                 data: await fs.readFile(`./${file}`)
-#               });
-#             }
 
       # 上传到中转服务
       - name: Upload firmware to transfer
@@ -168,7 +125,7 @@ jobs:
 
       # 生成release
       - name: Upload firmware to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@latest
         if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
