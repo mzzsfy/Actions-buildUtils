@@ -84,7 +84,7 @@ jobs:
             [ "${V_OS}" == 'windows' ] && V_SUFFIX='.exe'
             echo "strart build $platforms2 -> ${V_OS}_${V_ARCH}"
             echo "/tmp/dist/${V_OS}_${V_ARCH}" >> /tmp/files
-            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}${V_SUFFIX}" -ldflags="-w -s" -v | awk "{ print '[${V_OS}_${V_ARCH}]', $0 }" | tee "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
+            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}${V_SUFFIX}" -ldflags="-w -s" -v | sed -e "s/^/[${V_OS}_${V_ARCH}]/" | tee "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
             && echo "build over $platforms2 -> ${V_OS}_${V_ARCH} use $(( $(date +%s) - start ))s" \
             && echo "${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" >> release.txt \
             && echo "::notice ::$platforms2 -> ${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" \
