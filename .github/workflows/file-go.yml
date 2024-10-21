@@ -88,9 +88,11 @@ jobs:
             p=(${platforms2//\// })
             V_OS="${p[0]}"
             V_ARCH="${p[1]}"
+            V_SUFFIX=""
+            [ "${V_OS}" == 'windows' ] && V_SUFFIX='.exe'
             echo "strart build $platforms2 -> ${V_OS}_${V_ARCH}"
             echo "/tmp/dist/${V_OS}_${V_ARCH}" >> /tmp/files
-            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}$(if [[ '${V_ARCH}' == 'windows' ]] then echo '.exe'; fi)" -ldflags="-w -s" > "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
+            CGO_ENABLED=0 GOOS=${V_OS} GOARCH=${V_ARCH} go build -o "/tmp/dist/${V_OS}_${V_ARCH}${V_SUFFIX}" -ldflags="-w -s" > "/tmp/build_log/${V_OS}_${V_ARCH}.log" 2>&1  \
             && echo "build over $platforms2 -> ${V_OS}_${V_ARCH} use $(( $(date +%s) - start ))s" \
             && echo "${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" >> release.txt \
             && echo "::notice ::$platforms2 -> ${V_OS}_${V_ARCH} build use $(( $(date +%s) - start ))s" \
