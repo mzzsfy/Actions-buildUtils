@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out
-        uses: actions/checkout@latest
+        uses: actions/checkout@main
       # 产生tag
       - name: Generate tag
         id: tag
@@ -52,7 +52,7 @@ jobs:
 
       # 设置go环境
       - name: Set up Go
-        uses: actions/setup-go@latest
+        uses: actions/setup-go@main
         with:
           go-version: ${{ github.event.inputs.GO_VERSION }}
 
@@ -99,7 +99,7 @@ jobs:
 
       # 上传构建日志
       - name: Upload build logs
-        uses: actions/upload-artifact@latest
+        uses: actions/upload-artifact@main
         with:
           name: log_${{ steps.tag.outputs.tag }}
           path: /tmp/build_log
@@ -107,7 +107,7 @@ jobs:
 
       # 上传构建产物
       - name: Upload firmware directory
-        uses: actions/upload-artifact@latest
+        uses: actions/upload-artifact@main
         with:
           name: ${{ steps.tag.outputs.tag }}
           path: dist.tar.gz
@@ -125,7 +125,7 @@ jobs:
 
       # 生成release
       - name: Upload firmware to release
-        uses: softprops/action-gh-release@latest
+        uses: softprops/action-gh-release@main
         if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
