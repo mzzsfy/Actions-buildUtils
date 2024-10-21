@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out
-        uses: actions/checkout@v3
+        uses: actions/checkout@main
       # 产生tag
       - name: Generate tag
         id: tag
@@ -52,7 +52,7 @@ jobs:
 
       # 设置构建环境依赖
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: ${{ github.event.inputs.DOTNET_VERSION }}
 
@@ -126,7 +126,7 @@ jobs:
 
       # 生成release
       - name: Upload firmware to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@master
         if: github.event.inputs.UPLOAD_RELEASE == 'true' && !failure() && !cancelled()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
